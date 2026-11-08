@@ -1,0 +1,466 @@
+<!doctype html><html><head><meta charset="utf8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style><script type='text/javascript' nonce='08qfb0Qu1VFByJlnSQV/ZA==' src='https://48c1c8c6-0c15-4836-99c9-28a0349d702d.frame.claudeusercontent.com/6aRwnRM3ZH8sEmTiO6VI2BzvuXL5qDFbXF0VAelMYmow2QkplPZHS98e1qXsQGvGj2keQpvdWjbI5C-8P4jUiNoGwNO3EUk_pgXvNBh-B-2DkqzlbGh3FmmugThhXGJvOZmarAnf1NUrbmgXI4CwJyS1oeKfY5UOtz-GCz0MpFjrJO1zZn1HZvghtpyaqQ3BWDSX5zV5CpHGO6DIYpYB9zunEOj2rKiEmZwXoMisknB933SmwQHdEkBwPQQnvnkgu019P7RNsF33nwC7Y5qo7qLflIJlKbBVY8Pfodi1a73AN7_JAdDXZ9gID3jn4wh6KmCB7UlZIqFCN2faJxsGRbPy9T_6wpSsH7KxxwinL9ThRYAIhf3o82BEqUngxSdnKSOBgEQBeoQfOvxWcLJl9C6M3c8q6gvOouNjcuVePGbubUrje3u6VodjmQ3QTDCkB4FiCWaUMStLx8KXpiR3BNQ_-VPlfWYH-U4HeXNgmNf5L4mN-EhtydeQ9l00apXjQoOp_tKMHmDNF2LV-YemjVQuIL_TzLoHP0GM2s4d12Icz8QIlf816NNBvoASapi7SBxtZ_xSa5uTIzUO7zmLfmtL4n1zTmj6dqvxDDdpKOlSPOpII25ukXdBnZnsv3q1GSMZLxaYJtp_NMNDO8KqXei85C6qIPn7YVt-mScNEeZXxISmCEyOgLje53P9nhkkc8vQG4g4RuaZ5hlbFobSrw'></script></head><body>
+<title>ケーシング長計算</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@500;700;900&amp;family=IBM+Plex+Sans+JP:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;display=swap">
+<style>
+/* Layout: 作業台の計量メモ。左に単発計算＋断面図、右に条件と単位、下に径×重量の早見表 */
+:root{
+  --bg:#eef0ee;
+  --panel:#fbfcfb;
+  --ink:#1d2421;
+  --muted:#5d6762;
+  --line:#d3d8d5;
+  --accent:#8a2f2a;
+  --accent-soft:#f3e3df;
+  --casing:#c98f6b;
+  --casing-edge:#8a2f2a;
+  --cell-hi:#e9dcc9;
+  --f-display:"Zen Kaku Gothic New","Hiragino Sans","Yu Gothic",sans-serif;
+  --f-body:"IBM Plex Sans JP","Hiragino Sans","Yu Gothic",sans-serif;
+  --f-num:"IBM Plex Mono",ui-monospace,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#141816; --panel:#1c211f; --ink:#e6ebe8; --muted:#9aa49f; --line:#323a36;
+    --accent:#e08a7c; --accent-soft:#3a2523; --casing:#b97e5c; --casing-edge:#e08a7c; --cell-hi:#3b3226;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#141816; --panel:#1c211f; --ink:#e6ebe8; --muted:#9aa49f; --line:#323a36;
+  --accent:#e08a7c; --accent-soft:#3a2523; --casing:#b97e5c; --casing-edge:#e08a7c; --cell-hi:#3b3226;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.6}
+.wrap{max-width:1100px;margin:0 auto;padding-block:28px 56px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:grid;gap:24px}
+header h1{font-family:var(--f-display);font-weight:900;font-size:clamp(26px,4vw,36px);margin:0;letter-spacing:.02em;text-wrap:balance}
+header p{margin:4px 0 0;color:var(--muted);max-width:65ch}
+.formula{font-family:var(--f-num);font-size:13px;color:var(--muted);margin-top:8px}
+.formula b{color:var(--accent);font-weight:600}
+
+.top{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:24px}
+@media (max-width:820px){.top{grid-template-columns:minmax(0,1fr)}}
+
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:20px;min-width:0}
+.label{font-family:var(--f-display);font-weight:700;font-size:12px;letter-spacing:.12em;color:var(--muted);text-transform:uppercase;margin:0 0 12px}
+
+.inputs{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media (max-width:460px){.inputs{grid-template-columns:1fr}}
+.field{display:grid;gap:4px;min-width:0;align-content:start}
+.field label{font-size:13px;color:var(--muted);font-weight:500}
+.field .hint{font-size:12px;color:var(--muted)}
+.ctl{display:flex;align-items:stretch;border:1px solid var(--line);border-radius:4px;background:var(--bg);overflow:hidden}
+.ctl:focus-within{outline:2px solid var(--accent);outline-offset:1px}
+.ctl input,.ctl select{border:0;background:transparent;color:var(--ink);font:500 18px var(--f-num);padding:8px 10px;min-width:0;width:100%}
+.ctl input:focus,.ctl select:focus{outline:none}
+.ctl .unit{display:flex;align-items:center;padding:0 10px;color:var(--muted);font:500 13px var(--f-num);border-left:1px solid var(--line)}
+.ctl select.unit-sel{width:auto;flex:none;font-size:14px;border-left:1px solid var(--line);padding:0 8px;cursor:pointer}
+.ctl select.full{font-size:15px;cursor:pointer}
+
+.presets{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.chip{font:500 12px var(--f-body);border:1px solid var(--line);background:transparent;color:var(--ink);border-radius:999px;padding:3px 10px;cursor:pointer}
+.chip:hover{border-color:var(--accent);color:var(--accent)}
+.chip:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+
+.result{display:grid;grid-template-columns:auto minmax(0,1fr);gap:20px;align-items:center;margin-top:20px;padding-top:20px;border-top:1px dashed var(--line)}
+@media (max-width:460px){.result{grid-template-columns:minmax(0,1fr)}}
+.xsec{display:grid;justify-items:center;gap:4px}
+.xsec svg{display:block}
+.xsec small{font:12px var(--f-num);color:var(--muted);text-align:center}
+.bigrow{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 10px}
+.big{font-family:var(--f-num);font-weight:600;font-size:clamp(36px,7vw,56px);line-height:1;color:var(--accent);font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.big span{font-size:.4em;color:var(--muted);margin-left:6px;font-weight:500}
+.lenunit{display:inline-flex}
+.lenunit select{font:500 14px var(--f-num)}
+.alt{font-family:var(--f-num);font-size:13px;color:var(--muted);margin-top:6px;font-variant-numeric:tabular-nums}
+.sub{color:var(--muted);font-size:13px;margin-top:4px}
+dl.break{display:grid;grid-template-columns:auto auto;justify-content:start;gap:2px 18px;margin:14px 0 0;font-size:13px}
+dl.break dt{color:var(--muted)}
+dl.break dd{margin:0;font-family:var(--f-num);font-variant-numeric:tabular-nums;text-align:right}
+
+.settings{display:grid;gap:14px}
+.settings .ctl input{font-size:16px}
+.note{font-size:12px;color:var(--muted);margin:0}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:4px;overflow:hidden}
+.seg button{font:600 13px var(--f-body);border:0;background:transparent;color:var(--muted);padding:6px 12px;cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--accent);color:var(--panel)}
+.seg button:focus-visible{outline:2px solid var(--ink);outline-offset:-2px}
+
+.tablehead{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end;justify-content:space-between}
+.tablehead .lists{display:grid;grid-template-columns:1fr 1fr;gap:12px;min-width:0}
+@media (max-width:560px){.tablehead .lists{grid-template-columns:1fr}}
+.tablehead input.list{font:500 14px var(--f-num)}
+.actions{display:flex;gap:8px;flex-wrap:wrap}
+.btn{font:600 13px var(--f-body);border:1px solid var(--accent);background:var(--accent);color:var(--panel);border-radius:4px;padding:8px 14px;cursor:pointer}
+.btn.ghost{background:transparent;color:var(--accent)}
+.btn:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+.toast{font-size:12px;color:var(--accent);min-height:1.2em}
+
+.tscroll{overflow-x:auto;margin-top:16px;border:1px solid var(--line);border-radius:4px}
+table{border-collapse:collapse;width:100%;font-family:var(--f-num);font-variant-numeric:tabular-nums;font-size:14px}
+th,td{padding:8px 12px;text-align:right;border-bottom:1px solid var(--line);white-space:nowrap}
+thead th{background:var(--bg);font-weight:600;color:var(--muted);font-size:12px}
+thead th:first-child,tbody th{text-align:left}
+tbody th{font-weight:600;background:var(--bg)}
+tbody th .kind{display:block;font:500 11px var(--f-body);color:var(--muted)}
+td.gpm{color:var(--muted);font-size:12px}
+td.cell{cursor:pointer}
+td.cell:hover{background:var(--accent-soft)}
+td.cell:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+td.sel{background:var(--cell-hi);font-weight:600;color:var(--accent)}
+tbody tr:last-child th,tbody tr:last-child td{border-bottom:0}
+.foot{font-size:12px;color:var(--muted);margin-top:8px}
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>ケーシング長計算</h1>
+    <p>ファイブラスケーシング（充填径 30〜250mm）用。充填径と肉の重量から、用意するケーシングの長さと本数を出します。メトリック（g・kg・t）とインペリアル（oz・lb・st・ton）のどちらでも入力できます。</p>
+    <div class="formula">充填長 L = <b>W</b> ÷ ( <b>ρ</b> × π × (<b>d</b>/2)² )　→　必要長 = L × (1 + ロス率) + 本数 × クリップ代</div>
+  </header>
+
+  <div class="top">
+    <section class="panel" aria-labelledby="calc-h">
+      <h2 class="label" id="calc-h">計算</h2>
+      <div class="inputs">
+        <div class="field">
+          <label for="dia">充填径（メーカー推奨充填径）</label>
+          <div class="ctl"><input id="dia" type="number" inputmode="decimal" min="0" step="any" value="75"><select id="diaUnit" class="unit-sel" aria-label="径の単位"><option value="mm" selected="">mm</option><option value="in">in</option></select></div>
+          <div class="presets" id="diaPresets"></div>
+          <span class="hint" id="diaWarn" hidden=""></span>
+        </div>
+        <div class="field">
+          <label for="wt">充填肉の重量</label>
+          <div class="ctl"><input id="wt" type="number" inputmode="decimal" min="0" step="any" value="10"><select id="wtUnit" class="unit-sel" aria-label="重量の単位"></select></div>
+          <div class="presets" id="wtPresets"></div>
+        </div>
+      </div>
+
+      <div class="result">
+        <div class="xsec">
+          <svg id="xsvg" width="120" height="120" viewbox="0 0 120 120" aria-label="断面図"></svg>
+          <small id="xcap">断面</small>
+        </div>
+        <div style="min-width:0">
+          <div class="bigrow">
+            <div class="big" id="outLen">–</div>
+            <div class="ctl lenunit"><select id="lenUnit" class="unit-sel" aria-label="長さの単位" style="border-left:0"></select></div>
+          </div>
+          <div class="alt" id="outAlt"></div>
+          <div class="sub" id="outSub"></div>
+          <dl class="break" id="outBreak"></dl>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel" aria-labelledby="set-h">
+      <h2 class="label" id="set-h">条件</h2>
+      <div class="settings">
+        <div class="field">
+          <label>単位系のまとめ切替</label>
+          <div class="seg" role="group" aria-label="単位系">
+            <button type="button" id="sysMetric" aria-pressed="false">メトリック</button>
+            <button type="button" id="sysImperial" aria-pressed="false">インペリアル</button>
+          </div>
+          <span class="hint">径・重量・長さ・結び代・リンク長の単位を一括で切り替えます。個別にも変更できます。</span>
+        </div>
+        <div class="field">
+          <label for="rho">肉の比重</label>
+          <div class="ctl"><input id="rho" type="number" inputmode="decimal" min="0.5" max="2" step="0.01" value="1.05"><span class="unit">g/cm³</span></div>
+          <span class="hint">一般的なソーセージ生地は 1.00〜1.10。脂が多いほど小さめ。</span>
+        </div>
+        <div class="field">
+          <label for="loss">ロス・余裕率</label>
+          <div class="ctl"><input id="loss" type="number" inputmode="decimal" min="0" max="100" step="1" value="3"><span class="unit">%</span></div>
+          <span class="hint">充填ムラ・破袋・端数の分。ファイブラスは伸びが少ないので小さめで可。</span>
+        </div>
+        <div class="field">
+          <label for="link">1本の充填長（カット長）</label>
+          <div class="ctl"><input id="link" type="number" inputmode="decimal" min="0" step="any" value="50"><select id="linkUnit" class="unit-sel" aria-label="1本の充填長の単位"><option value="cm" selected="">cm</option><option value="in">in</option></select></div>
+          <span class="hint">クリップ間の長さ。0 にすると全量を1本として計算します。</span>
+        </div>
+        <div class="field">
+          <label for="tie">クリップ代（1本あたり両端合計）</label>
+          <div class="ctl"><input id="tie" type="number" inputmode="decimal" min="0" step="any" value="8"><select id="tieUnit" class="unit-sel" aria-label="クリップ代の単位"><option value="cm" selected="">cm</option><option value="in">in</option></select></div>
+          <span class="hint">クリップ・吊りループ・カット端に使う長さ。</span>
+        </div>
+        <p class="note">設定はこのブラウザに保存されます。</p>
+      </div>
+    </section>
+  </div>
+
+  <section class="panel" aria-labelledby="tbl-h">
+    <div class="tablehead">
+      <div style="min-width:0;flex:1 1 560px;display:grid;gap:12px">
+        <h2 class="label" id="tbl-h" style="margin:0">早見表　径 × 重量 → 必要ケーシング長（<span id="tblLenLabel">m</span>）</h2>
+        <div class="lists">
+          <div class="field">
+            <label for="diaList">充填径（<span id="diaListUnit">mm</span>、カンマ区切り）</label>
+            <div class="ctl"><input id="diaList" class="list" type="text" value="30, 40, 50, 60, 75, 90, 105, 120, 150, 200, 250"></div>
+          </div>
+          <div class="field">
+            <label for="wtList">重量（カンマ区切り）</label>
+            <div class="ctl"><input id="wtList" class="list" type="text" value="1, 5, 10, 25, 50, 100"><select id="tblWtUnit" class="unit-sel" aria-label="早見表の重量単位"></select></div>
+          </div>
+        </div>
+      </div>
+      <div style="display:grid;gap:4px;justify-items:end">
+        <div class="actions">
+          <button class="btn ghost" id="resetBtn" type="button">初期値に戻す</button>
+          <button class="btn" id="copyBtn" type="button">表をコピー（Excel用）</button>
+        </div>
+        <div class="toast" id="toast" role="status"></div>
+      </div>
+    </div>
+    <div class="tscroll"><table id="tbl"></table></div>
+    <div class="foot">セルをクリックすると上の計算に反映します。表の値はロス率と、カット長から求めた本数ぶんのクリップ代を含みます。長さの単位は計算欄の選択に従います。ton は米トン（2,000 lb）、long ton は英トン（2,240 lb）、t はメートルトン（1,000 kg）。</div>
+  </section>
+</div>
+
+<script>
+(function(){
+  const $ = id => document.getElementById(id);
+
+  // 重量 → g
+  const W = {
+    g:{f:1, name:"g", sys:"m"}, kg:{f:1000, name:"kg", sys:"m"}, t:{f:1e6, name:"t", sys:"m"},
+    oz:{f:28.349523125, name:"oz", sys:"i"}, lb:{f:453.59237, name:"lb", sys:"i"}, st:{f:6350.29318, name:"st", sys:"i"},
+    ton:{f:907184.74, name:"ton (米)", sys:"i"}, lton:{f:1016046.9088, name:"long ton (英)", sys:"i"}
+  };
+  // 長さ → cm
+  const L = {
+    cm:{f:1, name:"cm", sys:"m"}, m:{f:100, name:"m", sys:"m"}, km:{f:100000, name:"km", sys:"m"},
+    in:{f:2.54, name:"in", sys:"i"}, ft:{f:30.48, name:"ft", sys:"i"}, yd:{f:91.44, name:"yd", sys:"i"}, mi:{f:160934.4, name:"mi", sys:"i"}
+  };
+  const DIA = {mm:0.1, in:2.54}; // → cm
+  const SHORT = {cm:1, in:2.54};
+
+  function fillSelect(sel, map, keys, selected){
+    sel.innerHTML = "";
+    const groups = [["m","メトリック"],["i","インペリアル"]];
+    groups.forEach(([s,label])=>{
+      const og = document.createElement("optgroup"); og.label = label;
+      keys.filter(k=>map[k].sys===s).forEach(k=>{ const o=document.createElement("option"); o.value=k; o.textContent=map[k].name; og.appendChild(o); });
+      if(og.children.length) sel.appendChild(og);
+    });
+    sel.value = selected;
+  }
+  fillSelect($("wtUnit"), W, Object.keys(W), "kg");
+  fillSelect($("tblWtUnit"), W, Object.keys(W), "kg");
+  fillSelect($("lenUnit"), L, ["cm","m","km","in","ft","yd","mi"], "m");
+
+  const DEFAULT_LISTS = {
+    dia:{mm:"30, 40, 50, 60, 75, 90, 105, 120, 150, 200, 250", in:"1.25, 1.5, 2, 2.5, 3, 3.5, 4, 5, 6, 8, 10"},
+    wt:{g:"500, 1000, 2000, 5000, 10000", kg:"1, 5, 10, 25, 50, 100", t:"0.1, 0.25, 0.5, 1, 2, 5",
+        oz:"16, 32, 64, 160, 320", lb:"5, 10, 25, 50, 100, 250", st:"1, 2, 5, 10, 20",
+        ton:"0.1, 0.25, 0.5, 1, 2, 5", lton:"0.1, 0.25, 0.5, 1, 2, 5"}
+  };
+
+  const ids = ["dia","diaUnit","wt","wtUnit","lenUnit","rho","loss","tie","tieUnit","link","linkUnit","diaList","tblWtUnit","wtList"];
+  const defaults = {}; ids.forEach(k => defaults[k] = $(k).value);
+  const KEY = "casing-calc-fibrous-v1";
+  try{ const s = JSON.parse(localStorage.getItem(KEY) || "null"); if(s) ids.forEach(k => { if(s[k] != null) $(k).value = s[k]; }); }catch(e){}
+  // 保存値が無効な選択肢だった場合の保険
+  ids.forEach(k => { if($(k).tagName==="SELECT" && !$(k).value) $(k).value = defaults[k]; });
+  function save(){ try{ const o={}; ids.forEach(k=>o[k]=$(k).value); localStorage.setItem(KEY, JSON.stringify(o)); }catch(e){} }
+
+  const num = (v, d=0) => { const n = parseFloat(String(v).replace(/,/g,"")); return isFinite(n) ? n : d; };
+  const parseList = s => String(s).split(/[,、\s]+/).map(x=>parseFloat(x)).filter(x=>isFinite(x) && x>0);
+  const fmt = (n, dp) => n.toLocaleString("ja-JP",{minimumFractionDigits:dp,maximumFractionDigits:dp});
+  const fmtAuto = n => { const a=Math.abs(n); return fmt(n, a>=1000?0 : a>=100?1 : a>=1?2 : a>=0.01?3 : 5); };
+  const trim = n => +n.toPrecision(6);
+
+  function kind(dMm){ if(dMm < 50) return "小径"; if(dMm < 90) return "中径"; if(dMm < 150) return "大径"; return "特大径"; }
+  // pieceCm > 0: クリップ間長さで本数を出し、1本ごとにクリップ代を加算
+  function gPerCm(dCm, rho){ const r = dCm/2; return rho * Math.PI * r * r; }
+  function calc(dCm, wG, rho, lossPct, clipCm, pieceCm){
+    const gpc = gPerCm(dCm, rho), fill = wG / gpc, loss = fill*lossPct/100;
+    const n = pieceCm > 0 ? Math.max(1, Math.ceil(fill/pieceCm - 1e-9)) : 1;
+    const clip = n * clipCm;
+    return {gpc, fill, loss, n, clip, total: fill + loss + clip};
+  }
+  const toLen = (cm, u) => cm / L[u].f;
+
+  // 径プリセット（mm基準）
+  [40,60,75,90,105,120,150,200,250].forEach(v=>{
+    const b=document.createElement("button"); b.type="button"; b.className="chip"; b.textContent=v+"mm";
+    b.onclick=()=>{ $("dia").value = $("diaUnit").value==="mm" ? v : trim(v/25.4); update(); };
+    $("diaPresets").appendChild(b);
+  });
+  // 重量プリセット
+  [["10 kg",10,"kg"],["100 kg",100,"kg"],["1 t",1,"t"],["10 lb",10,"lb"],["100 lb",100,"lb"],["1 ton",1,"ton"]].forEach(([t,v,u])=>{
+    const b=document.createElement("button"); b.type="button"; b.className="chip"; b.textContent=t;
+    b.onclick=()=>{ $("wt").value=v; $("wtUnit").value=u; syncWt(u); update(); }; $("wtPresets").appendChild(b);
+  });
+
+  // 単位変更時に値を換算
+  function convertOnChange(selId, inputId, factors){
+    const sel=$(selId); let prev=sel.value;
+    sel.addEventListener("change", ()=>{
+      const v=num($(inputId).value, NaN);
+      if(isFinite(v)) $(inputId).value = trim(v*factors[prev]/factors[sel.value]);
+      prev=sel.value; update();
+    });
+    return u => { prev = u; };
+  }
+  const syncDia = convertOnChange("diaUnit","dia",DIA);
+  const syncWt = convertOnChange("wtUnit","wt",Object.fromEntries(Object.entries(W).map(([k,o])=>[k,o.f])));
+  const syncTie = convertOnChange("tieUnit","tie",SHORT);
+  const syncLink = convertOnChange("linkUnit","link",SHORT);
+  // 早見表の径リストは単位変更で換算、重量リストは単位ごとの標準リストに置換
+  let prevDiaList = $("diaUnit").value;
+  $("diaUnit").addEventListener("change", ()=>{
+    const sel=$("diaUnit"), prev=prevDiaList;
+    const isDefault = $("diaList").value.trim()===DEFAULT_LISTS.dia[prev];
+    $("diaList").value = isDefault ? DEFAULT_LISTS.dia[sel.value] : parseList($("diaList").value).map(v=>trim(v*DIA[prev]/DIA[sel.value])).join(", ");
+    prevDiaList=sel.value; update();
+  });
+  $("tblWtUnit").addEventListener("change", ()=>{ $("wtList").value = DEFAULT_LISTS.wt[$("tblWtUnit").value]; update(); });
+  $("lenUnit").addEventListener("change", update);
+
+  function setSystem(sys){
+    const cur = {dia:$("diaUnit").value, wt:$("wtUnit").value, tie:$("tieUnit").value, link:$("linkUnit").value};
+    const metric = sys==="m";
+    const target = {dia: metric?"mm":"in", wt: metric?(W[cur.wt].sys==="m"?cur.wt:(cur.wt==="ton"||cur.wt==="lton"?"t":"kg")):(W[cur.wt].sys==="i"?cur.wt:(cur.wt==="t"?"ton":cur.wt==="g"?"oz":"lb")),
+                    tie: metric?"cm":"in", link: metric?"cm":"in"};
+    const apply = (selId, val) => { if($(selId).value!==val){ $(selId).value=val; $(selId).dispatchEvent(new Event("change")); } };
+    apply("diaUnit", target.dia); apply("wtUnit", target.wt); apply("tieUnit", target.tie); apply("linkUnit", target.link);
+    const lu = $("lenUnit").value; if(L[lu].sys!==sys) $("lenUnit").value = metric ? ({in:"cm",ft:"m",yd:"m",mi:"km"}[lu]) : ({cm:"in",m:"ft",km:"mi"}[lu]);
+    const tw = $("tblWtUnit").value; if(W[tw].sys!==sys){ $("tblWtUnit").value = metric ? (tw==="ton"||tw==="lton"?"t":"kg") : (tw==="t"?"ton":"lb"); $("wtList").value = DEFAULT_LISTS.wt[$("tblWtUnit").value]; }
+    update();
+  }
+  $("sysMetric").onclick = ()=>setSystem("m");
+  $("sysImperial").onclick = ()=>setSystem("i");
+
+  function drawXsec(dMm){
+    // 250mm を外枠とした比例表示
+    const c = 60, R = 56, r = Math.max(Math.min(dMm/250, 1.2)*R, 2);
+    $("xsvg").innerHTML =
+      `<circle cx="${c}" cy="${c}" r="${R}" fill="none" stroke="var(--line)" stroke-width="1" stroke-dasharray="3 3"/>`+
+      `<circle cx="${c}" cy="${c}" r="${r}" fill="var(--casing)" stroke="var(--casing-edge)" stroke-width="2"/>`+
+      `<circle cx="${c-r*0.3}" cy="${c-r*0.25}" r="${Math.max(r*0.1,1)}" fill="var(--panel)" opacity=".45"/>`+
+      `<circle cx="${c+r*0.35}" cy="${c+r*0.2}" r="${Math.max(r*0.07,1)}" fill="var(--panel)" opacity=".35"/>`;
+    $("xcap").textContent = `φ${fmt(dMm,1)}mm（${fmt(dMm/25.4,2)}in）・${kind(dMm)}／点線＝250mm`;
+  }
+
+  let selD = null, selW = null;
+
+  function update(){
+    const dU=$("diaUnit").value, wU=$("wtUnit").value, lU=$("lenUnit").value, tU=$("tieUnit").value, kU=$("linkUnit").value;
+    const dCm = num($("dia").value)*DIA[dU], wG = num($("wt").value)*W[wU].f;
+    const rho = num($("rho").value,1.05), loss = num($("loss").value), tieCm = num($("tie").value)*SHORT[tU], linkCm = num($("link").value)*SHORT[kU];
+    const sys = (dU==="mm" && W[wU].sys==="m" && L[lU].sys==="m") ? "m" : (dU==="in" && W[wU].sys==="i" && L[lU].sys==="i") ? "i" : "";
+    $("sysMetric").setAttribute("aria-pressed", sys==="m"); $("sysImperial").setAttribute("aria-pressed", sys==="i");
+    $("diaListUnit").textContent = dU; $("tblLenLabel").textContent = L[lU].name;
+    save();
+
+    if(dCm<=0 || wG<=0 || rho<=0){
+      $("outLen").textContent = "–"; $("outAlt").textContent = "";
+      $("outSub").textContent = "径と重量に 0 より大きい数値を入れてください。";
+      $("outBreak").innerHTML = ""; selD=null; renderTable(); return;
+    }
+    drawXsec(dCm*10);
+    const dMm = dCm*10, warn = $("diaWarn");
+    warn.hidden = !(dMm < 30 || dMm > 250);
+    warn.textContent = dMm < 30 ? "30mm 未満はファイブラスの対象範囲外です（計算はそのまま行います）。" : "250mm を超えています（計算はそのまま行います）。";
+    const r = calc(dCm, wG, rho, loss, tieCm, linkCm);
+    $("outLen").textContent = fmtAuto(toLen(r.total, lU));
+    const altU = L[lU].sys==="m" ? ["ft","yd"] : ["m","km"];
+    $("outAlt").textContent = "= " + altU.map(u=>fmtAuto(toLen(r.total,u))+" "+L[u].name).join(" ／ ");
+    $("outSub").textContent = `φ${$("dia").value}${dU} に ${$("wt").value} ${W[wU].name} を詰める場合`;
+
+    const short = (cm) => L[lU].sys==="m" ? fmtAuto(cm)+" cm" : fmtAuto(cm/2.54)+" in";
+    const rows = [
+      ["充填部の長さ", fmtAuto(toLen(r.fill,lU))+" "+L[lU].name],
+      [`ロス・余裕（${loss}%）`, fmtAuto(toLen(r.loss,lU))+" "+L[lU].name],
+      [`クリップ代（${fmt(r.n,0)}本ぶん）`, fmtAuto(toLen(r.clip,lU))+" "+L[lU].name],
+      ["長さあたりの充填量", fmt(r.gpc/10,2)+" kg/m ／ "+fmt(r.gpc*30.48/453.59237,2)+" lb/ft"],
+    ];
+    if(linkCm>0){
+      const lw = r.gpc*linkCm, last = r.fill - (r.n-1)*linkCm;
+      rows.push([`本数（${$("link").value}${kU}／本）`, fmt(r.n,0)+" 本"+(last < linkCm*0.999 ? `（最後の1本は ${short(last)}）` : "")]);
+      rows.push(["1本の重さ", fmt(lw/1000,2)+" kg ／ "+fmt(lw/453.59237,2)+" lb"]);
+      rows.push(["1本のカット長", short(linkCm + num($("tie").value)*SHORT[tU])]);
+    }
+    $("outBreak").innerHTML = rows.map(([a,b])=>`<dt>${a}</dt><dd>${b}</dd>`).join("");
+    selD = dCm; selW = wG;
+    renderTable();
+  }
+
+  function tableData(){
+    const dU=$("diaUnit").value, twU=$("tblWtUnit").value, lU=$("lenUnit").value;
+    const ds = parseList($("diaList").value), ws = parseList($("wtList").value);
+    const rho = num($("rho").value,1.05), loss = num($("loss").value), tieCm = num($("tie").value)*SHORT[$("tieUnit").value];
+    const pieceCm = num($("link").value)*SHORT[$("linkUnit").value];
+    return {dU,twU,lU,ds,ws,rho,loss,tieCm,pieceCm};
+  }
+
+  function renderTable(){
+    const {dU,twU,lU,ds,ws,rho,loss,tieCm,pieceCm} = tableData();
+    if(!ds.length || !ws.length || rho<=0){ $("tbl").innerHTML = `<tbody><tr><td style="text-align:left">径と重量の一覧に数値を入れてください。</td></tr></tbody>`; return; }
+    const imperialLen = L[lU].sys==="i";
+    let h = `<thead><tr><th>径 (${dU})</th><th>${imperialLen?"lb/ft":"kg/m"}</th>` + ws.map(w=>`<th>${w} ${W[twU].name}</th>`).join("") + `</tr></thead><tbody>`;
+    ds.forEach(d=>{
+      const dCm = d*DIA[dU], gpc = gPerCm(dCm,rho);
+      const per = imperialLen ? fmt(gpc*30.48/453.59237,2) : fmt(gpc/10,2);
+      h += `<tr><th>φ${d}<span class="kind">${kind(dCm*10)}</span></th><td class="gpm">${per}</td>`;
+      ws.forEach(w=>{
+        const wG = w*W[twU].f;
+        const t = toLen(calc(dCm, wG, rho, loss, tieCm, pieceCm).total, lU);
+        const sel = (selD!==null && Math.abs(selD-dCm)<1e-9 && Math.abs(selW-wG)/wG < 1e-9) ? " sel" : "";
+        h += `<td class="cell${sel}" data-d="${d}" data-w="${w}" tabindex="0">${fmtAuto(t)}</td>`;
+      });
+      h += `</tr>`;
+    });
+    $("tbl").innerHTML = h + `</tbody>`;
+  }
+
+  $("tbl").addEventListener("click", e=>{
+    const td = e.target.closest("td.cell"); if(!td) return;
+    $("dia").value = td.dataset.d;
+    $("wtUnit").value = $("tblWtUnit").value; syncWt($("wtUnit").value);
+    $("wt").value = td.dataset.w; update();
+  });
+  $("tbl").addEventListener("keydown", e=>{ if((e.key==="Enter"||e.key===" ") && e.target.matches("td.cell")){ e.preventDefault(); e.target.click(); } });
+
+  ["dia","wt","rho","loss","tie","link","diaList","wtList"].forEach(k => $(k).addEventListener("input", update));
+
+  $("resetBtn").onclick = ()=>{
+    ids.forEach(k => $(k).value = defaults[k]);
+    syncDia(defaults.diaUnit); prevDiaList = defaults.diaUnit; syncWt(defaults.wtUnit); syncTie(defaults.tieUnit); syncLink(defaults.linkUnit);
+    update(); flash("初期値に戻しました");
+  };
+
+  function tsv(){
+    const {dU,twU,lU,ds,ws,rho,loss,tieCm,pieceCm} = tableData();
+    const imperialLen = L[lU].sys==="i";
+    const lines = [[`径(${dU})`,"区分", imperialLen?"lb/ft":"kg/m"].concat(ws.map(w=>`${w}${W[twU].name} (${L[lU].name})`)).join("\t")];
+    ds.forEach(d=>{
+      const dCm=d*DIA[dU], gpc=gPerCm(dCm,rho);
+      lines.push([d, kind(dCm*10), imperialLen?(gpc*30.48/453.59237).toFixed(2):(gpc/10).toFixed(2)]
+        .concat(ws.map(w=>+toLen(calc(dCm,w*W[twU].f,rho,loss,tieCm,pieceCm).total,lU).toPrecision(6))).join("\t"));
+    });
+    lines.push("", `ファイブラスケーシング / 比重 ${rho} g/cm³ / ロス ${loss}% / 1本の充填長 ${$("link").value}${$("linkUnit").value} / クリップ代 ${$("tie").value}${$("tieUnit").value}`);
+    return lines.join("\n");
+  }
+  let tId;
+  function flash(m){ $("toast").textContent = m; clearTimeout(tId); tId = setTimeout(()=>$("toast").textContent="", 2500); }
+  $("copyBtn").onclick = ()=>{
+    const text = tsv();
+    const fallback = ()=>{
+      const ta = document.createElement("textarea"); ta.value = text; ta.style.position="fixed"; ta.style.opacity="0";
+      document.body.appendChild(ta); ta.select();
+      let ok=false; try{ ok = document.execCommand("copy"); }catch(e){}
+      ta.remove(); flash(ok ? "コピーしました。Excel に貼り付けできます" : "コピーできませんでした。表を選択してコピーしてください");
+    };
+    try{ navigator.clipboard.writeText(text).then(()=>flash("コピーしました。Excel に貼り付けできます"), fallback); }catch(e){ fallback(); }
+  };
+
+  update();
+})();
+</script>
+
+</body></html>
